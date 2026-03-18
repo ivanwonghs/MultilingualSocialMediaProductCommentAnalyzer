@@ -20,7 +20,7 @@ def main():
         replyMsg_result = replyMsg_pipeline([
             {"role": "user", "content": "Generate a polite reply to apologize for in correspodning language for below message: '"+user_input+"'"},
         ])
-        st.write(replyMsg)
+        st.write(replyMsg_result)
         #st.write(f"Reply Message: {confidence:.2f}")
 
 if __name__ == "__main__":
