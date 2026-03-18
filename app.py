@@ -1,67 +1,94 @@
-from typing import Union, Mapping, Tuple
+import streamlit as st
+from transformers import pipeline, AutoTokenizer
+from typing import Optional
 
-def format_sentiment(label: Union[str, int], score: float) -> str:
-    """
-    Convert model output (label and score) to the format:
-      "Positive (confidence : 24%)" or "Negative (confidence : 14%)"
+# Lazy global cache for pipelines/tokenizer so we don't reload on every call
+_SENTIMENT_PIPELINE: Optional[object] = None
+_TRANSLATE_PIPELINE: Optional[object] = None
+_TRANSLATE_TOKENIZER: Optional[object] = None
 
-    label: str like "POS"/"POSITIVE"/"NEG"/"NEGATIVE" or int like 1/0
-    score: float in [0,1] representing confidence for the predicted class
+def get_sentiment_pipeline():
+    global _SENTIMENT_PIPELINE
+    if _SENTIMENT_PIPELINE is None:
+        # change model name if needed
+        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/trial_1")
+    return _SENTIMENT_PIPELINE
 
-    Returns the formatted string.
-    """
-    # Normalize label for checking
-    if isinstance(label, int):
-        lab_norm = label
+def get_translate_pipeline_and_tokenizer():
+    global _TRANSLATE_PIPELINE, _TRANSLATE_TOKENIZER
+    model_name = "Qwen/Qwen3-0.6B"
+    if _TRANSLATE_PIPELINE is None:
+        _TRANSLATE_PIPELINE = pipeline("text-generation", model=model_name)
+    if _TRANSLATE_TOKENIZER is None:
+        _TRANSLATE_TOKENIZER = AutoTokenizer.from_pretrained(model_name)
+    return _TRANSLATE_PIPELINE, _TRANSLATE_TOKENIZER
+
+def sentiment(user_input: str, placeholder):
+    # placeholder is an st.empty() where results will be written
+    pipeline_obj = get_sentiment_pipeline()
+    # Run inference (this is where we want the spinner/placeholder to show loading)
+    sentiment_result = pipeline_obj(user_input)
+    sentiment_label = sentiment_result[0]["label"]
+    confidence = sentiment_result[0]["score"]
+
+    # Replace placeholder content with the result
+    placeholder.markdown(f"**Sentiment:** {sentiment_label}\n\n**Confidence:** {confidence:.2f}")
+
+def translate(user_input: str, placeholder):
+    translate_pipeline, tokenizer = get_translate_pipeline_and_tokenizer()
+
+    # Build messages and apply chat template as you had
+    messages = [
+        {"role": "user", "content": "Just give me '"+user_input+"' in English purely in string charater"},
+    ]
+
+    text_input = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=False
+    )
+
+    outputs = translate_pipeline(text_input, max_new_tokens=32768)
+    generated_text_full = outputs[0].get('generated_text', "")
+
+    marker_end_think = "</think>\n\n"
+    start_of_response_idx = generated_text_full.rfind(marker_end_think)
+    if start_of_response_idx != -1:
+        raw_response = generated_text_full[start_of_response_idx + len(marker_end_think):]
     else:
-        lab_norm = str(label).strip().upper()
+        # fallback if marker not found, take whole generated text
+        raw_response = generated_text_full
 
-    if lab_norm == 1 or (isinstance(lab_norm, str) and lab_norm.startswith("POS")):
-        text = "Positive"
-    elif lab_norm == 0 or (isinstance(lab_norm, str) and lab_norm.startswith("NEG")):
-        text = "Negative"
-    else:
-        # fallback: try to parse numeric string
-        try:
-            ln = int(lab_norm)  # may raise
-            text = "Positive" if ln == 1 else ("Negative" if ln == 0 else str(label))
-        except Exception:
-            text = str(label).capitalize()
+    extracted_response = raw_response.strip().strip('"')
+    placeholder.markdown(f"**Meaning in English:** {extracted_response}")
 
-    percent = round(float(score) * 100)
-    return f"{text} (confidence : {percent}%)"
+def main():
+    st.title("Multi-language Comment Analyser")
+    st.write("Please input the comment you want to analyse:")
 
+    user_input = st.text_input("Enter comment here")
 
-def extract_prediction_from_probs(prob_map: Mapping[str, float], positive_keys: Tuple[str, ...] = ("POS", "POSITIVE", "1"), negative_keys: Tuple[str, ...] = ("NEG", "NEGATIVE", "0")) -> Tuple[Union[str,int], float]:
-    """
-    When your model returns a probability map (e.g., {"NEG": 0.3, "POS": 0.7} or {"0":0.3, "1":0.7}),
-    this helper returns (pred_label, pred_score) where pred_label is either the original key
-    (string) or integer 0/1 when possible, and pred_score is the probability of that predicted label.
+    if user_input:
+        # Create placeholders for results
+        status_placeholder = st.empty()      # for overall status / loading screen text
+        sentiment_placeholder = st.empty()   # will hold sentiment result
+        translate_placeholder = st.empty()   # will hold translation result
 
-    Parameters:
-    - prob_map: mapping from label/key to probability (values should sum to ~1)
-    - positive_keys / negative_keys: keys considered positive/negative (checked case-insensitively)
+        # Show a loading screen/message while work runs
+        with st.spinner("Analyzing comment — this may take a while..."):
+            status_placeholder.info("Loading models and running inference. Please wait...")
 
-    Returns:
-    - (pred_label, pred_score)
-      pred_label: str or int (if key is "0" or "1" or integer)
-      pred_score: float in [0,1]
-    """
-    if not prob_map:
-        raise ValueError("prob_map is empty")
+            # Run sentiment -> update sentiment_placeholder when done
+            sentiment(user_input, sentiment_placeholder)
 
-    # pick the key with max probability
-    best_key = max(prob_map, key=lambda k: float(prob_map[k]))
-    best_score = float(prob_map[best_key])
+            # Run translation -> update translate_placeholder when done
+            translate(user_input, translate_placeholder)
 
-    # try to normalize best_key to int if it's "0" or "1"
-    key_norm = best_key
-    try:
-        if isinstance(best_key, str) and best_key.isdigit():
-            key_int = int(best_key)
-            if key_int in (0, 1):
-                key_norm = key_int
-    except Exception:
-        key_norm = best_key
+            # Once done, remove the status/loading message
+            status_placeholder.success("Analysis complete.")
 
-    return key_norm, best_score
+        # Optional: collapse the spinner by doing nothing else; results are shown in placeholders
+
+if __name__ == "__main__":
+    main()
