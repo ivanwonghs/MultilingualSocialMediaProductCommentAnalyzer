@@ -5,7 +5,7 @@ def main():
     sentiment_pipeline = pipeline(model="ivanwonghs/trial_1")
     #replyMsg_pipeline = pipeline(model="microsoft/Phi-4-mini-instruct")
 
-    st.title("Sentiment Analysis with HuggingFace Spaces")
+    st.title("Muti-language Reply Message Generator For Negative Comment")
     st.write("Enter a sentence to analyze its sentiment:")
 
     user_input = st.text_input("")
