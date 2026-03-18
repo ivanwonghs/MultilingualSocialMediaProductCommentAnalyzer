@@ -9,9 +9,6 @@ def sentiment(user_input):
 
     st.write(f"Sentiment: {sentiment}")
     st.write(f"Confidence: {confidence:.2f}")
-    
-    replyMsg_result = replyMsg_pipeline(f"Generate a polite reply to apologize in the same language language for below message: '{user_input}'")
-    st.write(f"Suggested Reply Message: {replyMsg_result[0]['generated_text']}")
         
 def translate(user_input):
     # The model name is known from earlier cells
