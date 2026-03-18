@@ -10,17 +10,16 @@ def main():
 
     user_input = st.text_input("")
     if user_input:
-        result = sentiment_pipeline(user_input)
-        sentiment = result[0]["label"]
-        confidence = result[0]["score"]
+        sentiment_result = sentiment_pipeline(user_input)
+        sentiment = sentiment_result[0]["label"]
+        confidence = sentiment_result[0]["score"]
 
         st.write(f"Sentiment: {sentiment}")
         st.write(f"Confidence: {confidence:.2f}")
         
-        replyMsg_pipeline = pipeline("text-generation", model="microsoft/Phi-4-mini-instruct", trust_remote_code=True)
-        replyMsg = [
+        replyMsg_result = replyMsg_pipeline([
             {"role": "user", "content": "Generate a polite reply to apologize for in correspodning language for below message: '"+user_input+"'"},
-        ]
+        ])
         st.write(replyMsg)
         #st.write(f"Reply Message: {confidence:.2f}")
 
