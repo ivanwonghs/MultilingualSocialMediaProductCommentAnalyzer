@@ -1,7 +1,7 @@
 import streamlit as st
 from transformers import pipeline, AutoTokenizer
 
-def sentiment():
+def sentiment(user_input):
     sentiment_pipeline = pipeline(model="ivanwonghs/trial_1")
     sentiment_result = sentiment_pipeline(user_input)
     sentiment = sentiment_result[0]["label"]
@@ -13,13 +13,13 @@ def sentiment():
     replyMsg_result = replyMsg_pipeline(f"Generate a polite reply to apologize in the same language language for below message: '{user_input}'")
     st.write(f"Suggested Reply Message: {replyMsg_result[0]['generated_text']}")
         
-def translate():
+def translate(user_input):
     # The model name is known from earlier cells
     model_name = "Qwen/Qwen3-0.6B"
     # Initialize the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     messages = [
-        {"role": "user", "content": "Just give me 'あたしの夫日本人だから毎日日本語勉強します。日本語ちゃんと話すと彼の嬉し顔見ますのは楽しみです。やくにたつ全部ビデオありがとう' in English purely in string charater"},
+        {"role": "user", "content": "Just give me '"+user_input+"' in English purely in string charater"},
     ]
      # Apply chat template with thinking disabled
     # tokenize=False is important here as pipe expects string input now, not tokenized IDs
@@ -48,8 +48,8 @@ def main():
     st.write("Please input the comment you want to analyse:")
     user_input = st.text_input("")
     if user_input:
-        sentiment()
-        translate()
+        sentiment(user_input)
+        translate(user_input)
         
 if __name__ == "__main__":
     main()
