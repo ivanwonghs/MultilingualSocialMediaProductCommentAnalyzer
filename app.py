@@ -3,7 +3,7 @@ from transformers import pipeline
 
 def main():
     sentiment_pipeline = pipeline(model="ivanwonghs/trial_1")
-    replyMsg_pipeline = pipeline(model="microsoft/Phi-4-mini-instruct")
+    replyMsg_pipeline = pipeline("text-generation", model="microsoft/Phi-4-mini-instruct", trust_remote_code=True)
 
     st.title("Muti-language Reply Message Generator For Negative Comment")
     st.write("Enter a sentence to analyze its sentiment:")
