@@ -1,1 +1,2 @@
-# TrialProject
+# Multilingual Social Media Product Comment Analyzer
+AI-powered tool for organizations to analyze product comments on social media: detects sentiment and provides English translations/meanings for multilingual comments.

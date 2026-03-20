@@ -10,8 +10,7 @@ _TRANSLATE_TOKENIZER: Optional[object] = None
 def get_sentiment_pipeline():
     global _SENTIMENT_PIPELINE
     if _SENTIMENT_PIPELINE is None:
-        # change model name if needed
-        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/trial_1")
+        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews", task="text-classification")
     return _SENTIMENT_PIPELINE
 
 def get_translate_pipeline_and_tokenizer():
@@ -39,7 +38,7 @@ def translate(user_input: str, placeholder):
 
     # Build messages and apply chat template as you had
     messages = [
-        {"role": "user", "content": "Just give me '"+user_input+"' in English purely in string charater"},
+        {"role": "user", "content": "Translate the following into English: '"+user_input+"' "},
     ]
 
     text_input = tokenizer.apply_chat_template(
