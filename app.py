@@ -10,10 +10,11 @@ _TRANSLATE_TOKENIZER: Optional[object] = None
 def get_sentiment_pipeline():
     global _SENTIMENT_PIPELINE
     if _SENTIMENT_PIPELINE is None:
-        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews", task="text-classification")
+        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews")
        
         ## Testing 
         st.divider()
+        st.write(pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews"))
         st.markdown("## _SENTIMENT_PIPELINE RESULT: ")
         st.write(_SENTIMENT_PIPELINE)
         st.divider()
@@ -40,7 +41,7 @@ def sentiment(user_input: str, placeholder):
     confidence = sentiment_result[0]["score"]
 
     # Replace placeholder content with the result
-    placeholder.markdown(f"**Sentiment:** {sentiment_label}\n\n**Confidence:** {confidence:.2f}")
+    placeholder.markdown(f"**Sentiment:** {sentiment_label} ({confidence:.2%} confidence)")
 
 def translate(user_input: str, placeholder):
     translate_pipeline, tokenizer = get_translate_pipeline_and_tokenizer()
@@ -73,9 +74,8 @@ def translate(user_input: str, placeholder):
 
 def main():
     st.title("Multilingual Social Media Product Comment Analyzer\n")
-    st.write("Please input the comment you want to analyse:")
-
-    user_input = st.text_input("Enter comment here")
+    st.divider()
+    user_input = st.text_input("Please input the comment you want to analyse:")
 
     if user_input:
         # Create placeholders for results
