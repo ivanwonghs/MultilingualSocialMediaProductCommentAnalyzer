@@ -75,7 +75,7 @@ def translate(user_input: str, placeholder):
     placeholder.markdown(f"**Meaning in English:** {extracted_response}")
 
 def main():
-    st.markdown("### Multilingual Social Media Product Comment Analyzer\n")
+    st.markdown("## Multilingual Social Media Product Comment Analyzer\n")
     st.divider()
 
     # Layout: left column for language/support info, right column for app input/results
@@ -83,25 +83,24 @@ def main():
 
     with left_col:
         # Place multilingual support markdown block on the left
-        st.markdown("## 🌐 Multilingual Support")
         st.markdown(
             """
 
-Supported languages:
-- English
-- Arabic
-- German
-- Spanish
-- French
-- Japanese
-- Chinese
-- Indonesian
-- Hindi
-- Italian
-- Malay
-- Portuguese
-
-"""
+                Supported languages:
+                - English
+                - Arabic
+                - German
+                - Spanish
+                - French
+                - Japanese
+                - Chinese
+                - Indonesian
+                - Hindi
+                - Italian
+                - Malay
+                - Portuguese
+            
+            """
         )
 
     with right_col:
