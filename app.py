@@ -5,7 +5,7 @@ from typing import Optional
 st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide")
 
 # Lazy global cache for pipelines/tokenizer so we don't reload on every call
-_SENTIMENT_PIPELINE: Optional[object] = None
+_SENTIMENT_PIPELINE: Optional[object] = Nonef
 _TRANSLATE_PIPELINE: Optional[object] = None
 _TRANSLATE_TOKENIZER: Optional[object] = None
 
@@ -14,13 +14,7 @@ def get_sentiment_pipeline():
     # Use a cached resource so the model loads only once per session/app lifetime
     global _SENTIMENT_PIPELINE
     if _SENTIMENT_PIPELINE is None:
-        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews")
-        # Optional testing output (remove in production)
-        st.divider()
-        st.write(pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews"))
-        st.markdown("## _SENTIMENT_PIPELINE RESULT: ")
-        st.write(_SENTIMENT_PIPELINE)
-        st.divider()
+        _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final")
     return _SENTIMENT_PIPELINE
 
 @st.cache_resource
@@ -79,7 +73,7 @@ def main():
     st.divider()
 
     # Layout: left column for language/support info, right column for app input/results
-    left_col, right_col = st.columns([1, 3])
+    left_col, divider_col, right_col = st.columns([1, 0.02, 3])
 
     with left_col:
         # Place multilingual support markdown block on the left
@@ -103,6 +97,17 @@ def main():
             """
         )
 
+    with divider_col:
+        # Add a vertical line using a small column and HTML/CSS
+        st.markdown(
+            """
+            <div style="height:100%; display:flex; align-items:stretch;">
+                <div style="width:1px; background-color:rgba(0,0,0,0.12); margin-left:auto; margin-right:auto;"></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    
     with right_col:
         user_input = st.text_input("Please input the comment you want to analyse:")
 
