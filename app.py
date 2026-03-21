@@ -2,26 +2,28 @@ import streamlit as st
 from transformers import pipeline, AutoTokenizer
 from typing import Optional
 
+st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide")
+
 # Lazy global cache for pipelines/tokenizer so we don't reload on every call
 _SENTIMENT_PIPELINE: Optional[object] = None
 _TRANSLATE_PIPELINE: Optional[object] = None
 _TRANSLATE_TOKENIZER: Optional[object] = None
 
+@st.cache_resource
 def get_sentiment_pipeline():
+    # Use a cached resource so the model loads only once per session/app lifetime
     global _SENTIMENT_PIPELINE
     if _SENTIMENT_PIPELINE is None:
         _SENTIMENT_PIPELINE = pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews")
-       
-        ## Testing 
+        # Optional testing output (remove in production)
         st.divider()
         st.write(pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews"))
         st.markdown("## _SENTIMENT_PIPELINE RESULT: ")
         st.write(_SENTIMENT_PIPELINE)
         st.divider()
-        ## Testing
-    
     return _SENTIMENT_PIPELINE
 
+@st.cache_resource
 def get_translate_pipeline_and_tokenizer():
     global _TRANSLATE_PIPELINE, _TRANSLATE_TOKENIZER
     model_name = "Qwen/Qwen3-0.6B"
@@ -34,11 +36,6 @@ def get_translate_pipeline_and_tokenizer():
 def sentiment(user_input: str, placeholder):
     # placeholder is an st.empty() where results will be written
     pipeline_obj = get_sentiment_pipeline()
-    
-    ##TESTING
-    st.write(pipeline_obj)
-    ##TESTING
-    
     # Run inference (this is where we want the spinner/placeholder to show loading)
     sentiment_result = pipeline_obj(user_input)
     st.write(sentiment_result)
@@ -80,28 +77,54 @@ def translate(user_input: str, placeholder):
 def main():
     st.markdown("### Multilingual Social Media Product Comment Analyzer\n")
     st.divider()
-    user_input = st.text_input("Please input the comment you want to analyse:")
 
-    if user_input:
-        # Create placeholders for results
-        status_placeholder = st.empty()      # for overall status / loading screen text
-        sentiment_placeholder = st.empty()   # will hold sentiment result
-        translate_placeholder = st.empty()   # will hold translation result
+    # Layout: left column for language/support info, right column for app input/results
+    left_col, right_col = st.columns([1, 3])
 
-        # Show a loading screen/message while work runs
-        with st.spinner("Analyzing comment — this may take a while..."):
-            status_placeholder.info("Loading models and running inference. Please wait...")
+    with left_col:
+        # Place multilingual support markdown block on the left
+        st.markdown("## 🌐 Multilingual Support")
+        st.markdown(
+            """
 
-            # Run sentiment -> update sentiment_placeholder when done
-            sentiment(user_input, sentiment_placeholder)
+Supported languages:
+- English
+- Arabic
+- German
+- Spanish
+- French
+- Japanese
+- Chinese
+- Indonesian
+- Hindi
+- Italian
+- Malay
+- Portuguese
 
-            # Run translation -> update translate_placeholder when done
-            translate(user_input, translate_placeholder)
+"""
+        )
 
-            # Once done, remove the status/loading message
-            status_placeholder.success("Analysis complete.")
+    with right_col:
+        user_input = st.text_input("Please input the comment you want to analyse:")
 
-        # Optional: collapse the spinner by doing nothing else; results are shown in placeholders
+        if user_input:
+            # Create placeholders for results
+            status_placeholder = st.empty()      # for overall status / loading screen text
+            sentiment_placeholder = st.empty()   # will hold sentiment result
+            translate_placeholder = st.empty()   # will hold translation result
+
+            # Show a loading screen/message while work runs
+            with st.spinner("Analyzing comment — this may take a while..."):
+                status_placeholder.info("Loading models and running inference. Please wait...")
+
+                # Run sentiment -> update sentiment_placeholder when done
+                sentiment(user_input, sentiment_placeholder)
+
+                # Run translation -> update translate_placeholder when done
+                translate(user_input, translate_placeholder)
+
+                # Once done, remove the status/loading message
+                status_placeholder.success("Analysis complete.")
 
 if __name__ == "__main__":
     main()
