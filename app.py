@@ -5,7 +5,7 @@ from typing import Optional
 st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide")
 
 # Lazy global cache for pipelines/tokenizer so we don't reload on every call
-_SENTIMENT_PIPELINE: Optional[object] = Nonef
+_SENTIMENT_PIPELINE: Optional[object] = None
 _TRANSLATE_PIPELINE: Optional[object] = None
 _TRANSLATE_TOKENIZER: Optional[object] = None
 
