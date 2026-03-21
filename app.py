@@ -32,7 +32,6 @@ def sentiment(user_input: str, placeholder):
     pipeline_obj = get_sentiment_pipeline()
     # Run inference (this is where we want the spinner/placeholder to show loading)
     sentiment_result = pipeline_obj(user_input)
-    st.write(sentiment_result)
     sentiment_label = sentiment_result[0]["label"]
     confidence = sentiment_result[0]["score"]
 
@@ -132,3 +131,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    #TEST
+    st.write("sentiment_result: ")
+    st.write(sentiment_result)
+    st.write("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    st.write(pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final"))
+    st.write(pipeline(model="ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final")("TTESTING"))
