@@ -10,7 +10,7 @@ st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide", in
 
 # Internal (hard-coded) model IDs
 _TRANSLATE_MODEL_ID = "Qwen/Qwen3-0.6B"
-_SENTIMENT_MODEL_ID = "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews"
+_SENTIMENT_MODEL_ID = "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final"
 
 # Cached pipeline stores
 _SENTIMENT_PIPELINES: dict = {}
