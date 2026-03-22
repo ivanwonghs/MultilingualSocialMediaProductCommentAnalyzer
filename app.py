@@ -4,15 +4,13 @@ from typing import Optional
 
 st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide")
 
-# Lazy global cache for pipelines/tokenizer so we don't reload on every call
-# Note: caches keyed by model name to allow switching models without re-downloading on every run.
+# Cached pipeline dictionaries
 _SENTIMENT_PIPELINES: dict = {}
 _TRANSLATE_PIPELINES: dict = {}
 _TRANSLATE_TOKENIZERS: dict = {}
 
 @st.cache_resource
 def get_sentiment_pipeline_cached(model_name: str):
-    # keyed cache inside the function ensures per-model caching
     if model_name not in _SENTIMENT_PIPELINES:
         _SENTIMENT_PIPELINES[model_name] = pipeline(model=model_name)
     return _SENTIMENT_PIPELINES[model_name]
@@ -41,7 +39,6 @@ def translate(user_input: str, placeholder, translate_model_name: str = "Qwen/Qw
         {"role": "user", "content": content_to_translate},
     ]
 
-    # Use tokenizer's chat template if available; otherwise fall back to raw content
     try:
         text_input = tokenizer.apply_chat_template(
             messages,
@@ -67,6 +64,7 @@ def translate(user_input: str, placeholder, translate_model_name: str = "Qwen/Qw
 
 def main():
     st.markdown("## Multilingual Social Media Product Comment Analyzer\n")
+
     st.markdown(
         """
         <style>
@@ -81,6 +79,7 @@ def main():
             flex: 0 0 360px;
             max-width: 420px;
             padding-right: 8px;
+            box-sizing: border-box;
         }
         .vertical-divider {
             width: 1px;
@@ -89,106 +88,104 @@ def main():
         .right-pane {
             flex: 1 1 auto;
             padding-left: 16px;
+            box-sizing: border-box;
         }
-        /* Make sure Streamlit content uses full height */
-        .css-1d391kg { height: 100%; } /* best-effort selector; streamlit classnames vary */
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    # Render the split HTML container
-    st.markdown('<div class="app-split">', unsafe_allow_html=True)
+    # Split layout using Streamlit columns (valid specs only)
+    left_col, divider_col, right_col = st.columns([1, 0.02, 3])
 
-    # Left pane: controls
-    with st.container():
-        left_col = st.columns([1, 0])[0]  # single column container for consistent layout
-        with left_col:
-            st.markdown("### Controls")
-            st.caption("Change settings here, then press Apply to load models / run the selected functions.")
+    # Left pane content (controls)
+    with left_col:
+        st.markdown("### Controls")
+        st.caption("Change settings here, then click Apply. Use Analyze to run with the active configuration.")
 
-            # MODEL selection (translation pipeline)
-            model_choice = st.selectbox(
-                "Translation model",
-                options=[
-                    "Qwen/Qwen3-0.6B",
-                    # Add other translation model IDs here if desired
-                ],
-                index=0,
-                help="Select the model used for translation/generation. Changes take effect after clicking Apply."
-            )
+        model_choice = st.selectbox(
+            "Translation model",
+            options=[
+                "Qwen/Qwen3-0.6B",
+                # add other translation models here
+            ],
+            index=0,
+            help="Select the model used for translation/generation. Changes take effect after clicking Apply."
+        )
 
-            # Sentiment pipeline selection
-            sentiment_choice = st.selectbox(
-                "Sentiment model",
-                options=[
-                    "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews",
-                    "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final",
-                    # Add other sentiment model IDs here if desired
-                ],
-                index=0,
-                help="Select the model used for sentiment classification. Changes take effect after clicking Apply."
-            )
+        sentiment_choice = st.selectbox(
+            "Sentiment model",
+            options=[
+                "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final",
+                # add other sentiment models here
+            ],
+            index=0,
+            help="Select the model used for sentiment classification. Changes take effect after clicking Apply."
+        )
 
-            # FUNCTION selection: Sentiment, Translate, Both
-            function_choice = st.selectbox(
-                "Function",
-                options=["Both", "Sentiment", "Translate"],
-                index=0,
-                help="Select which operation(s) to run on the comment. Changes take effect after clicking Apply."
-            )
+        function_choice = st.selectbox(
+            "Function",
+            options=["Both", "Sentiment", "Translate"],
+            index=0,
+            help="Select which operation(s) to run on the comment. Changes take effect after clicking Apply."
+        )
 
-            st.markdown("#### Supported languages")
-            st.markdown(
-                """
-                - English
-                - Arabic
-                - German
-                - Spanish
-                - French
-                - Japanese
-                - Chinese
-                - Indonesian
-                - Hindi
-                - Italian
-                - Malay
-                - Portuguese
-                """
-            )
+        st.markdown("#### Supported languages")
+        st.markdown(
+            """
+            - English
+            - Arabic
+            - German
+            - Spanish
+            - French
+            - Japanese
+            - Chinese
+            - Indonesian
+            - Hindi
+            - Italian
+            - Malay
+            - Portuguese
+            """
+        )
 
-            # Apply button: when pressed, we store the chosen configuration in session state
-            if st.button("Apply"):
-                # Save selections to session state so inference uses these values
-                st.session_state["applied_translate_model"] = model_choice
-                st.session_state["applied_sentiment_model"] = sentiment_choice
-                st.session_state["applied_function"] = function_choice
-                st.success("Applied new configuration. Now enter or re-run input on the right.")
-    # Close left pane markup
-    st.markdown('</div><div class="vertical-divider"></div>', unsafe_allow_html=True)
+        # Apply button sets the chosen configuration in session state
+        if st.button("Apply"):
+            st.session_state["applied_translate_model"] = model_choice
+            st.session_state["applied_sentiment_model"] = sentiment_choice
+            st.session_state["applied_function"] = function_choice
+            st.success("Configuration applied. Use Analyze to run with this configuration.")
 
-    # Right pane: input and results
-    with st.container():
-        right_col = st.columns([1, 0])[0]
-        with right_col:
-            # Pull applied settings from session_state (fallback to current selects if not yet applied)
-            translate_model_applied = st.session_state.get("applied_translate_model", model_choice)
-            sentiment_model_applied = st.session_state.get("applied_sentiment_model", sentiment_choice)
-            function_applied = st.session_state.get("applied_function", function_choice)
+    # Divider column: draw a full-height divider using HTML/CSS hack
+    with divider_col:
+        st.markdown(
+            """
+            <div style="height:100vh; width:1px; background-color:rgba(0,0,0,0.12); margin:0 8px;"></div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            st.markdown(f"**Active configuration:** Translation model: `{translate_model_applied}` — Sentiment model: `{sentiment_model_applied}` — Function: `{function_applied}`")
-            user_input = st.text_input("Please input the comment you want to analyse:")
+    # Right pane content (input and results)
+    with right_col:
+        translate_model_applied = st.session_state.get("applied_translate_model", model_choice)
+        sentiment_model_applied = st.session_state.get("applied_sentiment_model", sentiment_choice)
+        function_applied = st.session_state.get("applied_function", function_choice)
 
-            if user_input:
-                # Create placeholders for results
-                status_placeholder = st.empty()      # for overall status / loading screen text
-                sentiment_placeholder = st.empty()   # will hold sentiment result
-                translate_placeholder = st.empty()   # will hold translation result
+        st.markdown(f"**Active configuration:** Translation model: `{translate_model_applied}` — Sentiment model: `{sentiment_model_applied}` — Function: `{function_applied}`")
 
-                # Show a loading screen/message while work runs
+        user_input = st.text_input("Please input the comment you want to analyse:")
+
+        # Analyze button runs inference explicitly
+        if st.button("Analyze"):
+            if not user_input:
+                st.warning("Please enter a comment to analyze.")
+            else:
+                status_placeholder = st.empty()
+                sentiment_placeholder = st.empty()
+                translate_placeholder = st.empty()
+
                 with st.spinner("Analyzing comment — this may take a while..."):
                     status_placeholder.info("Loading models and running inference. Please wait...")
 
-                    # Decide what to run based on Function selection (applied)
                     if function_applied in ("Both", "Sentiment"):
                         try:
                             sentiment(user_input, sentiment_placeholder, sentiment_model_name=sentiment_model_applied)
@@ -201,11 +198,7 @@ def main():
                         except Exception as e:
                             translate_placeholder.error(f"Translate error: {e}")
 
-                    # Once done, remove the status/loading message
                     status_placeholder.success("Analysis complete.")
-
-    # Close split div
-    st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
