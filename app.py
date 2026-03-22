@@ -4,7 +4,7 @@ from typing import Optional
 
 st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide")
 
-# Hard-coded model IDs (displayed to users in About section)
+# Hard-coded model IDs (used internally)
 _TRANSLATE_MODEL_ID = "Qwen/Qwen3-0.6B"
 _SENTIMENT_MODEL_ID = "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews"
 
@@ -123,9 +123,25 @@ def main():
     with left_col:
         st.markdown('<div class="left">', unsafe_allow_html=True)
         st.markdown("### About this analyzer")
-        st.markdown(f"- Translation model: **{_TRANSLATE_MODEL_ID}**  ")
-        st.markdown(f"- Sentiment model: **{_SENTIMENT_MODEL_ID}**  ")
-        st.markdown(f"- Function: **Both (Sentiment + Translate)**")
+        st.markdown(
+            """
+            This application helps teams quickly assess short social-media or product comments written in many languages.
+
+            How it works:
+            - You enter a single comment (any supported language) in the input box on the right.
+            - When you click Analyze, the app first determines the comment's sentiment (e.g., positive, negative, neutral) and reports a confidence score.
+            - Next, the app produces a clear English rendering or translation of the comment so non-native readers can understand the meaning.
+
+            What the outputs mean:
+            - Sentiment: a categorical label plus a confidence percentage indicating how certain the model is.
+            - Meaning in English: a concise, human-readable translation or paraphrase of the original comment.
+
+            Notes:
+            - The models used to perform the analysis are fixed and managed by the application (not selectable from the UI).
+            - The app is intended for short comments (single sentences or short paragraphs). Very long inputs may be truncated or may increase processing time.
+            - Error messages are simplified for clarity; if an analysis fails please try again later.
+            """
+        )
         st.write("")  # spacing
 
         st.markdown("#### Supported languages")
