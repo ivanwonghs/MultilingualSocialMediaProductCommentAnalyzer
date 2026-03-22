@@ -6,7 +6,7 @@ st.set_page_config(page_title="Multilingual Comment Analyzer", layout="wide")
 
 # Hard-coded model IDs (no user selection, not displayed as internals)
 _TRANSLATE_MODEL_ID = "Qwen/Qwen3-0.6B"
-_SENTIMENT_MODEL_ID = "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews_final"
+_SENTIMENT_MODEL_ID = "ivanwonghs/multilingual_comment_sentiment_finetuned_on_amazon_reviews"
 
 # Cached pipeline dictionaries (keyed by model id)
 _SENTIMENT_PIPELINES: dict = {}
