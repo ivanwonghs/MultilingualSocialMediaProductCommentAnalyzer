@@ -1,6 +1,6 @@
 import streamlit as st
 from transformers import pipeline, AutoTokenizer
-from typing import Optional, List, Tuple
+from typing import Tuple
 import pandas as pd
 import io
 import time
@@ -66,24 +66,20 @@ def parse_uploaded_file(uploaded_file) -> pd.DataFrame:
         return pd.DataFrame(columns=["comment"])
     name = uploaded_file.name.lower()
     try:
-        if name.endswith(".csv") or name.endswith(".txt") or True:
-            # Try CSV first; if fails and file endswith .txt, parse as text
+        uploaded_file.seek(0)
+        if name.endswith(".txt"):
+            text = uploaded_file.read().decode("utf-8")
+            lines = [l.strip() for l in text.splitlines() if l.strip()]
+            df = pd.DataFrame({"comment": lines})
+        else:
             uploaded_file.seek(0)
-            if name.endswith(".txt"):
-                text = uploaded_file.read().decode("utf-8")
-                lines = [l.strip() for l in text.splitlines() if l.strip()]
-                df = pd.DataFrame({"comment": lines})
+            df = pd.read_csv(uploaded_file)
+            text_cols = df.select_dtypes(include=["object"]).columns.tolist()
+            if text_cols:
+                df = df[[text_cols[0]]].rename(columns={text_cols[0]: "comment"})
             else:
-                uploaded_file.seek(0)
-                df = pd.read_csv(uploaded_file)
-                text_cols = df.select_dtypes(include=["object"]).columns.tolist()
-                if text_cols:
-                    df = df[[text_cols[0]]].rename(columns={text_cols[0]: "comment"})
-                else:
-                    # fallback: treat each row as a comment
-                    df = df.rename(columns={df.columns[0]: "comment"}) if len(df.columns) > 0 else pd.DataFrame(columns=["comment"])
+                df = df.rename(columns={df.columns[0]: "comment"}) if len(df.columns) > 0 else pd.DataFrame(columns=["comment"])
     except Exception:
-        # Very robust fallback for poorly formatted CSVs
         try:
             uploaded_file.seek(0)
             text = uploaded_file.read().decode("utf-8")
@@ -91,20 +87,19 @@ def parse_uploaded_file(uploaded_file) -> pd.DataFrame:
             df = pd.DataFrame({"comment": lines})
         except Exception:
             df = pd.DataFrame(columns=["comment"])
-
     df["comment"] = df["comment"].astype(str).fillna("").str.strip()
     df = df[df["comment"] != ""].reset_index(drop=True)
     return df
 
 # Main UI
 def main():
-    # Title row (compact, no extra blank space)
+    # Title row (compact)
     title_col, meta_col = st.columns([0.8, 0.2])
     with title_col:
         st.title("Multilingual Social Media Product Comment Analyzer")
         st.caption("Quickly get sentiment and an English rendering for short comments.")
     with meta_col:
-        st.markdown("")  # reserved for future metadata
+        st.markdown("")  # reserved
 
     # Page CSS for compact two-column layout
     st.markdown(
@@ -115,6 +110,7 @@ def main():
         .right { flex:1 1 auto; padding:12px; box-sizing:border-box; }
         .about-small { font-size:14px; line-height:1.4; color: #111827; }
         .muted { color:#6b7280; font-size:13px; }
+        .langs { font-size:14px; line-height:1.6; }
         @media (max-width: 900px) {
             .layout { flex-direction:column; }
             .left { width:auto; border-right:none; border-bottom:1px solid rgba(0,0,0,0.06); }
@@ -126,7 +122,7 @@ def main():
     st.markdown('<div class="layout">', unsafe_allow_html=True)
     left_col, right_col = st.columns([0.28, 0.72])
 
-    # Left column: compact About + Batch help + supported langs
+    # Left column: About + Supported languages
     with left_col:
         st.markdown('<div class="left">', unsafe_allow_html=True)
         st.subheader("About")
@@ -135,26 +131,45 @@ def main():
             <div class="about-small">
             This app analyzes short social-media or product comments in many languages.
             - Click Analyze for a single comment.
-            - Or use Batch Mode below to upload a file and process many comments at once.
+            - Or use Batch Mode to upload a file and process many comments at once.
             </div>
             """, unsafe_allow_html=True
         )
-        st.markdown("**How it works**", unsafe_allow_html=True)
+        st.markdown("**How it works**")
         st.markdown(
             """
-            1. The app predicts sentiment (label + confidence).  
-            2. It then produces a concise English rendering so non-native readers understand the meaning.  
-            3. Downloadable CSV is provided for batch runs.
-            """)
+            1. Predicts sentiment (label + confidence).  
+            2. Produces a concise English rendering for non-native readers.  
+            3. Batch results are downloadable as CSV.
+            """
+        )
         st.markdown("**Batch mode quick tips**")
         st.markdown(
             """
             - CSV: first text column is used automatically.  
             - TXT: one comment per line.  
-            - Preview results and download a CSV when done.
-            """)
-        st.markdown("**Supported languages**", unsafe_allow_html=True)
-        st.markdown("<div class='muted'>English, Arabic, German, Spanish, French, Japanese, Chinese, Indonesian, Hindi, Italian, Malay, Portuguese</div>", unsafe_allow_html=True)
+            - Preview results and download when done.
+            """
+        )
+        st.markdown("**Supported languages**")
+        st.markdown(
+            """
+            <div class="langs">
+            - English<br>
+            - Arabic<br>
+            - German<br>
+            - Spanish<br>
+            - French<br>
+            - Japanese<br>
+            - Chinese<br>
+            - Indonesian<br>
+            - Hindi<br>
+            - Italian<br>
+            - Malay<br>
+            - Portuguese
+            </div>
+            """, unsafe_allow_html=True
+        )
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Right column: Single comment + Batch
@@ -164,9 +179,9 @@ def main():
         # Single comment area
         st.subheader("Single comment")
         st.markdown("Enter a short comment and click Analyze.")
-        user_input = st.text_input("Comment to analyse", key="single_input", placeholder="e.g. 這個服務真的很差")
+        # Changed placeholder to use '產品' instead of '服務'
+        user_input = st.text_input("Comment to analyse", key="single_input", placeholder="e.g. 這個產品真的很差")
 
-        # Buttons placed in a row: Analyze and (optional) Demo
         btn_col1, btn_col2 = st.columns([0.5, 0.5])
         with btn_col1:
             analyze_clicked = st.button("Analyze", key="analyze_single")
@@ -178,9 +193,8 @@ def main():
         translate_placeholder = st.empty()
 
         if demo_clicked:
-            # demo text and run
-            demo_text = "這個服務真的很差"
-            user_input = demo_text
+            # Demo text changed from '服務' to '產品'
+            demo_text = "這個產品真的很差"
             status_placeholder.info("Running demo example...")
             try:
                 label, score = run_sentiment_single(demo_text)
@@ -214,7 +228,7 @@ def main():
 
         st.markdown("---")
 
-        # Batch mode area
+        # Batch mode area (unchanged)
         st.subheader("Batch mode")
         st.markdown("Upload a CSV (one text column) or a TXT file (one comment per line). Preview, select rows, then Run batch.")
 
