@@ -139,6 +139,10 @@ def main():
                 options=["Both", "Sentiment", "Translate"],
                 index=0
             )
+            # LOGIC: free text area where user can provide a custom prompt template.
+            st.markdown("Logic / Prompt Template")
+            st.caption("If you provide a template, include {text} where the comment should be inserted. Otherwise the app will append the comment to this template.")
+            logic_template = st.text_area("Custom logic / prompt template (optional)", height=140)
 
             # Show supported languages list in left pane too
             st.markdown("#### Supported languages")
